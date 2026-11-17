@@ -7,7 +7,7 @@ import {
   StethoscopeIcon,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { PwaRegister } from "@/components/pwa";
+import { InstallButton, PwaRegister } from "@/components/pwa";
 import { LinkButton } from "@/components/link-button";
 import { getCurrentUser, homeFor } from "@/lib/auth";
 import { formatMoney } from "@/lib/dates";
@@ -52,6 +52,7 @@ export default async function Home() {
             {settings.name}
           </Link>
           <div className="flex items-center gap-2">
+            <InstallButton />
             {user ? (
               <LinkButton href={homeFor(user.profile.role)}>Go to dashboard</LinkButton>
             ) : (

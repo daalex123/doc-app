@@ -3,9 +3,74 @@
 import { useEffect, useState } from "react";
 import { DownloadIcon, ShareIcon, XIcon } from "lucide-react";
 
-/** Registers the service worker (public/sw.js). Renders nothing. */
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
+/* ---- tiny shared store so the install event is never missed ---- */
+let deferredPrompt: BeforeInstallPromptEvent | null = null;
+let installed = false;
+let listening = false;
+const listeners = new Set<() => void>();
+const notify = () => listeners.forEach((l) => l());
+
+function listen() {
+  if (listening || typeof window === "undefined") return;
+  listening = true;
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredPrompt = e as BeforeInstallPromptEvent;
+    notify();
+  });
+  window.addEventListener("appinstalled", () => {
+    deferredPrompt = null;
+    installed = true;
+    notify();
+  });
+}
+
+function isStandalone() {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (navigator as Navigator & { standalone?: boolean }).standalone === true
+  );
+}
+
+function useInstall() {
+  const [state, setState] = useState({ canPrompt: false, ios: false, standalone: true });
+
+  useEffect(() => {
+    listen();
+    const read = () =>
+      setState({
+        canPrompt: !!deferredPrompt,
+        ios: /iPad|iPhone|iPod/.test(navigator.userAgent) && !/CriOS|FxiOS/.test(navigator.userAgent),
+        standalone: installed || isStandalone(),
+      });
+    read();
+    listeners.add(read);
+    return () => {
+      listeners.delete(read);
+    };
+  }, []);
+
+  const install = async () => {
+    if (!deferredPrompt) return;
+    const evt = deferredPrompt;
+    deferredPrompt = null; // a prompt can only be used once
+    notify();
+    await evt.prompt();
+    await evt.userChoice;
+  };
+
+  return { ...state, install };
+}
+
+/** Registers the service worker (public/sw.js) and starts capturing the install prompt. */
 export function PwaRegister() {
   useEffect(() => {
+    listen();
     if (!("serviceWorker" in navigator)) return;
     navigator.serviceWorker
       .register("/sw.js", { scope: "/", updateViaCache: "none" })
@@ -14,68 +79,67 @@ export function PwaRegister() {
   return null;
 }
 
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-}
+const DISMISS_KEY = "clinic-install-hint-dismissed-at";
+const DISMISS_DAYS = 7;
 
-const DISMISS_KEY = "clinic-install-hint-dismissed";
-
-/** Small "Add to home screen" hint (Chromium prompt, or manual steps on iOS Safari). */
+/** "Install app" banner: native prompt on Chrome/Edge/Android, manual steps on iOS Safari. */
 export function InstallHint() {
-  const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
-  const [ios, setIos] = useState(false);
+  const { canPrompt, ios, standalone, install } = useInstall();
   const [hidden, setHidden] = useState(true);
 
   useEffect(() => {
-    const standalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      (navigator as Navigator & { standalone?: boolean }).standalone === true;
-    const dismissed = localStorage.getItem(DISMISS_KEY) === "1";
-    const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only capability detection
-    setIos(isIos);
-    setHidden(standalone || dismissed);
-    const onPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferred(e as BeforeInstallPromptEvent);
-    };
-    window.addEventListener("beforeinstallprompt", onPrompt);
-    return () => window.removeEventListener("beforeinstallprompt", onPrompt);
+    const at = Number(localStorage.getItem(DISMISS_KEY) ?? 0);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only
+    setHidden(Date.now() - at < DISMISS_DAYS * 86_400_000);
   }, []);
 
-  if (hidden || (!deferred && !ios)) return null;
-
-  const dismiss = () => {
-    localStorage.setItem(DISMISS_KEY, "1");
-    setHidden(true);
-  };
+  if (hidden || standalone || (!canPrompt && !ios)) return null;
 
   return (
-    <div className="mb-4 flex items-start gap-3 rounded-2xl bg-accent p-3 text-sm text-accent-foreground md:hidden">
+    <div className="mb-4 flex items-start gap-3 rounded-2xl bg-accent p-3 text-sm text-accent-foreground">
       <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-        {deferred ? <DownloadIcon className="size-4" /> : <ShareIcon className="size-4" />}
+        {canPrompt ? <DownloadIcon className="size-4" /> : <ShareIcon className="size-4" />}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="font-semibold">Add Clinic to your home screen</p>
-        {deferred ? (
-          <button
-            type="button"
-            onClick={async () => {
-              await deferred.prompt();
-              setDeferred(null);
-            }}
-            className="mt-1 font-medium underline underline-offset-2"
-          >
+        <p className="font-semibold">Install Clinic on your device</p>
+        {canPrompt ? (
+          <button type="button" onClick={install} className="mt-1 font-medium underline underline-offset-2">
             Install app
           </button>
         ) : (
           <p className="text-xs">Tap the Share button, then &ldquo;Add to Home Screen&rdquo;.</p>
         )}
       </div>
-      <button type="button" onClick={dismiss} aria-label="Dismiss" className="rounded-lg p-1 hover:bg-background/60">
+      <button
+        type="button"
+        onClick={() => {
+          localStorage.setItem(DISMISS_KEY, String(Date.now()));
+          setHidden(true);
+        }}
+        aria-label="Dismiss"
+        className="rounded-lg p-1 hover:bg-background/60"
+      >
         <XIcon className="size-4" />
       </button>
     </div>
+  );
+}
+
+/** Always-available install button (e.g. in the header or profile). Hidden once installed or unsupported. */
+export function InstallButton({ className }: { className?: string }) {
+  const { canPrompt, standalone, install } = useInstall();
+  if (standalone || !canPrompt) return null;
+  return (
+    <button
+      type="button"
+      onClick={install}
+      className={
+        className ??
+        "inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
+      }
+    >
+      <DownloadIcon className="size-3.5" />
+      Install app
+    </button>
   );
 }

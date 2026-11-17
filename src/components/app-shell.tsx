@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { NavLinks, type NavItem } from "@/components/nav-links";
 import { BottomTabs } from "@/components/bottom-tabs";
-import { InstallHint, PwaRegister } from "@/components/pwa";
+import { InstallButton, InstallHint, PwaRegister } from "@/components/pwa";
 import { signOut } from "@/app/(auth)/actions";
 import type { CurrentUser } from "@/lib/auth";
 
@@ -63,6 +63,7 @@ export function AppShell({
             <NavLinks items={nav} />
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            <InstallButton />
             <div className="text-right leading-tight">
               <p className="max-w-40 truncate text-sm font-medium">{name}</p>
               {role !== "patient" ? (
