@@ -68,3 +68,12 @@ export async function requireAdmin(): Promise<CurrentUser> {
   if (user.profile.role !== "admin") redirect("/admin");
   return user;
 }
+
+/** Admin or receptionist (front-desk data entry). Doctors are sent back to the admin home. */
+export const canImportPatients = (r: Role) => r === "admin" || r === "receptionist";
+
+export async function requireFrontDesk(): Promise<CurrentUser> {
+  const user = await requireStaff();
+  if (!canImportPatients(user.profile.role)) redirect("/admin");
+  return user;
+}

@@ -1,6 +1,6 @@
 import { AdminShell, type AdminNavItem } from "@/components/admin-shell";
 import { signOut } from "@/app/(auth)/actions";
-import { requireStaff } from "@/lib/auth";
+import { isClinicalRole, requireStaff } from "@/lib/auth";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await requireStaff();
@@ -10,6 +10,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: "/admin/appointments", label: "Appointments", icon: "appointments" },
     { href: "/admin/patients", label: "Patients", icon: "patients" },
   ];
+  nav.push({ href: "/admin/inventory", label: "Inventory", icon: "inventory" });
+  if (isClinicalRole(user.profile.role)) {
+    nav.push({ href: "/admin/templates", label: "Rx templates", icon: "templates" });
+  }
   if (user.profile.role === "admin") {
     nav.push(
       { href: "/admin/doctors", label: "Doctors", icon: "doctors" },

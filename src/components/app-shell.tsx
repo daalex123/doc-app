@@ -1,10 +1,12 @@
+import { BrandLogo } from "@/components/brand-logo";
 import Link from "next/link";
-import { LogOutIcon, StethoscopeIcon } from "lucide-react";
+import { LogOutIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { NavLinks, type NavItem } from "@/components/nav-links";
 import { BottomTabs } from "@/components/bottom-tabs";
 import { InstallButton, InstallHint, PwaRegister } from "@/components/pwa";
+import { PatientAvatar } from "@/components/patient-avatar";
 import { signOut } from "@/app/(auth)/actions";
 import type { CurrentUser } from "@/lib/auth";
 
@@ -13,8 +15,11 @@ export function AppShell({
   user,
   nav,
   homeHref,
+  avatarUrl,
   children,
 }: {
+  /** Signed URL of the signed-in patient's own photo, if any. */
+  avatarUrl?: string | null;
   user: CurrentUser;
   nav: NavItem[];
   homeHref: string;
@@ -22,7 +27,6 @@ export function AppShell({
 }) {
   const name = user.profile.full_name || user.email || "Account";
   const role = user.profile.role;
-  const initial = name.trim().charAt(0).toUpperCase() || "?";
 
   return (
     <div className="client-theme flex min-h-dvh flex-1 flex-col">
@@ -34,9 +38,9 @@ export function AppShell({
           <Link
             href="/portal/patients"
             aria-label="Profile"
-            className="flex size-12 shrink-0 items-center justify-center rounded-full bg-accent text-lg font-bold text-accent-foreground"
+            className="shrink-0 rounded-full"
           >
-            {initial}
+            <PatientAvatar name={name} src={avatarUrl} size="md" />
           </Link>
           <div className="min-w-0 flex-1 leading-tight">
             <p className="text-xs text-muted-foreground">Hi, welcome back</p>
@@ -53,17 +57,15 @@ export function AppShell({
       {/* Desktop top nav */}
       <header className="sticky top-0 z-30 hidden border-b bg-background/90 backdrop-blur md:block">
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-2.5">
-          <Link href={homeHref} className="flex shrink-0 items-center gap-2 font-semibold">
-            <span className="flex size-8 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              <StethoscopeIcon className="size-4" />
-            </span>
-            <span>Clinic</span>
+          <Link href={homeHref} aria-label="Deyon Dispensary & Pharmacy" className="shrink-0">
+            <BrandLogo className="h-9" />
           </Link>
           <div className="min-w-0 flex-1">
             <NavLinks items={nav} />
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <InstallButton />
+            <PatientAvatar name={name} src={avatarUrl} size="sm" />
             <div className="text-right leading-tight">
               <p className="max-w-40 truncate text-sm font-medium">{name}</p>
               {role !== "patient" ? (

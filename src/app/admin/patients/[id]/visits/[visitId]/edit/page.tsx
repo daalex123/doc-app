@@ -6,6 +6,7 @@ import { VisitForm } from "@/components/visit-form";
 import { requireClinical } from "@/lib/auth";
 import { formatInstantDate } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
+import { loadPrescribingData } from "@/lib/prescribing";
 import { saveVisit } from "@/app/actions/records";
 import { RX_ROWS, type Visit } from "@/lib/types";
 
@@ -16,7 +17,7 @@ export default async function EditVisitPage({
 }: {
   params: Promise<{ id: string; visitId: string }>;
 }) {
-  await requireClinical();
+  const user = await requireClinical();
   const { id, visitId } = await params;
 
   const supabase = await createClient();
@@ -60,6 +61,8 @@ export default async function EditVisitPage({
     defaults[`rx_notes_${i}`] = item.notes ?? "";
   });
 
+  const prescribing = await loadPrescribingData(supabase, user, id, visitId);
+
   return (
     <>
       <BackLink href={`/admin/patients/${id}`}>Back to record</BackLink>
@@ -74,6 +77,7 @@ export default async function EditVisitPage({
           defaults={defaults}
           cancelHref={`/admin/patients/${id}`}
           isFinalized={visit.status === "finalized"}
+          prescribing={prescribing}
         />
       </div>
     </>

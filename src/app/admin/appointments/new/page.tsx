@@ -9,6 +9,8 @@ import { requireStaff } from "@/lib/auth";
 import { BOOKING_ERRORS } from "@/lib/booking-errors";
 import { addDays, isValidDateString, todayColombo } from "@/lib/dates";
 import { displayPhone } from "@/lib/format";
+import { PatientAvatar } from "@/components/patient-avatar";
+import { signAvatarUrls } from "@/lib/avatars";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveDoctors, getSettings } from "@/lib/queries";
 import { bookAsStaff } from "@/app/actions/appointments";
@@ -17,7 +19,7 @@ import type { Patient } from "@/lib/types";
 
 export const metadata: Metadata = { title: "New booking" };
 
-type PatientRow = Pick<Patient, "id" | "full_name" | "phone">;
+type PatientRow = Pick<Patient, "id" | "full_name" | "phone" | "avatar_path">;
 
 export default async function AdminNewBookingPage({
   searchParams,
@@ -33,7 +35,7 @@ export default async function AdminNewBookingPage({
   if (sp.patient) {
     const { data } = await supabase
       .from("patients")
-      .select("id, full_name, phone")
+      .select("id, full_name, phone, avatar_path")
       .eq("id", sp.patient)
       .maybeSingle<PatientRow>();
     patient = data;
@@ -49,7 +51,7 @@ export default async function AdminNewBookingPage({
     if (digits.length >= 3) filters.push(`phone.ilike.%${digits.replace(/^0/, "")}%`);
     const { data } = await supabase
       .from("patients")
-      .select("id, full_name, phone")
+      .select("id, full_name, phone, avatar_path")
       .is("archived_at", null)
       .or(filters.join(","))
       .order("full_name")
@@ -71,8 +73,11 @@ export default async function AdminNewBookingPage({
     slots = (data as Slot[] | null) ?? [];
   }
 
+  const avatarUrls = await signAvatarUrls([patient?.avatar_path, ...matches.map((m) => m.avatar_path)]);
+
   const picker = patient ? (
-    <p className="text-sm">
+    <p className="flex items-center gap-2 text-sm">
+      <PatientAvatar name={patient.full_name} src={patient.avatar_path ? avatarUrls[patient.avatar_path] : null} size="sm" />
       <span className="font-medium">{patient.full_name}</span>{" "}
       <span className="text-muted-foreground">{displayPhone(patient.phone)}</span>
       <Link href="/admin/appointments/new" className="ml-3 text-primary hover:underline">
@@ -105,7 +110,10 @@ export default async function AdminNewBookingPage({
                   href={`/admin/appointments/new?${params}`}
                   className={cn("flex items-center justify-between rounded-lg border px-3 py-2 text-sm hover:bg-accent/50")}
                 >
-                  <span className="font-medium">{m.full_name}</span>
+                  <span className="flex items-center gap-2 font-medium">
+                    <PatientAvatar name={m.full_name} src={m.avatar_path ? avatarUrls[m.avatar_path] : null} size="sm" />
+                    {m.full_name}
+                  </span>
                   <span className="text-muted-foreground">{displayPhone(m.phone)}</span>
                 </Link>
               </li>

@@ -5,7 +5,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/app-shell";
 import { LinkButton } from "@/components/link-button";
 import { requirePatientUser } from "@/lib/auth";
-import { ageFromDob } from "@/lib/dates";
+import { formatAge } from "@/lib/dates";
+import { PatientAvatar } from "@/components/patient-avatar";
+import { signAvatarUrls } from "@/lib/avatars";
 import { getMyPatients } from "@/lib/queries";
 
 export const metadata: Metadata = { title: "Medical history" };
@@ -14,6 +16,7 @@ export default async function PortalHistoryIndex() {
   const user = await requirePatientUser();
   const patients = await getMyPatients(user.id);
 
+  const avatarUrls = await signAvatarUrls(patients.map((p) => p.avatar_path));
   if (patients.length === 1) redirect(`/portal/history/${patients[0].id}`);
 
   return (
@@ -29,9 +32,12 @@ export default async function PortalHistoryIndex() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {patients.map((p) => (
-            <Link key={p.id} href={`/portal/history/${p.id}`} className="rounded-xl border bg-card p-4 transition-colors hover:bg-accent/50">
-              <p className="font-medium">{p.full_name}</p>
-              <p className="text-sm text-muted-foreground">{ageFromDob(p.dob)} yrs</p>
+            <Link key={p.id} href={`/portal/history/${p.id}`} className="flex items-center gap-3 rounded-xl border bg-card p-4 transition-colors hover:bg-accent/50">
+              <PatientAvatar name={p.full_name} src={p.avatar_path ? avatarUrls[p.avatar_path] : null} />
+              <div>
+                <p className="font-medium">{p.full_name}</p>
+                <p className="text-sm text-muted-foreground">{formatAge(p.dob)}</p>
+              </div>
             </Link>
           ))}
         </div>

@@ -1,12 +1,15 @@
 "use client";
 
+import { BrandLogo } from "@/components/brand-logo";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   CalendarDaysIcon,
   LayoutDashboardIcon,
+  ClipboardListIcon,
   LogOutIcon,
+  PackageIcon,
   MenuIcon,
   StethoscopeIcon,
   UserCogIcon,
@@ -16,7 +19,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type AdminIconKey = "dashboard" | "appointments" | "patients" | "doctors" | "staff";
+export type AdminIconKey = "dashboard" | "appointments" | "patients" | "doctors" | "staff" | "inventory" | "templates";
 
 export interface AdminNavItem {
   href: string;
@@ -31,6 +34,8 @@ const ICONS: Record<AdminIconKey, LucideIcon> = {
   patients: UsersIcon,
   doctors: StethoscopeIcon,
   staff: UserCogIcon,
+  inventory: PackageIcon,
+  templates: ClipboardListIcon,
 };
 
 
@@ -47,12 +52,10 @@ function SidebarContent({
       <Link
         href="/admin"
         onClick={onNavigate}
-        className="flex h-16 shrink-0 items-center gap-2 px-5 text-lg font-semibold tracking-tight"
+        aria-label="Deyon Dispensary & Pharmacy"
+        className="flex h-16 shrink-0 items-center px-5"
       >
-        <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <StethoscopeIcon className="size-4" />
-        </span>
-        Clinic
+        <BrandLogo className="h-10" />
       </Link>
       <nav className="grid gap-1 px-3 py-2" aria-label="Main">
         {nav.map((item) => {

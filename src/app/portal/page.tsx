@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/app-shell";
 import { AppointmentCard } from "@/components/appointment-list";
 import { LinkButton } from "@/components/link-button";
 import { requirePatientUser } from "@/lib/auth";
+import { signAvatarUrls } from "@/lib/avatars";
 import { createClient } from "@/lib/supabase/server";
 import { getMyPatients } from "@/lib/queries";
 import type { Appointment } from "@/lib/types";
@@ -41,12 +42,14 @@ export default async function PortalHome() {
   const supabase = await createClient();
   const { data: upcoming } = await supabase
     .from("appointments")
-    .select("*, patients(full_name, phone, food_allergies, drug_allergies), doctors(name, specialty)")
+    .select("*, patients(full_name, phone, food_allergies, drug_allergies, avatar_path), doctors(name, specialty)")
     .eq("status", "confirmed")
     .gte("slot_end", new Date().toISOString())
     .order("slot_start")
     .limit(5)
     .returns<Appointment[]>();
+
+  const avatarUrls = await signAvatarUrls((upcoming ?? []).map((a) => a.patients?.avatar_path));
 
   return (
     <>
@@ -75,6 +78,7 @@ export default async function PortalHome() {
           <div className="grid gap-3">
             {upcoming.map((a) => (
               <AppointmentCard
+                avatarUrls={avatarUrls}
                 key={a.id}
                 appointment={a}
                 returnTo="/portal"

@@ -28,6 +28,7 @@ export interface Patient {
   guardian_name: string | null;
   guardian_phone: string | null;
   consent_at: string | null;
+  avatar_path: string | null;
 }
 
 export interface Doctor {
@@ -64,7 +65,7 @@ export interface Appointment {
   slot_end: string;
   status: AppointmentStatus;
   reason: string | null;
-  patients?: Pick<Patient, "full_name" | "phone" | "food_allergies" | "drug_allergies"> | null;
+  patients?: Pick<Patient, "full_name" | "phone" | "food_allergies" | "drug_allergies" | "avatar_path"> | null;
   doctors?: Pick<Doctor, "name" | "specialty"> | null;
 }
 
@@ -153,3 +154,68 @@ export const HISTORY_CATEGORIES: { value: HistoryCategory; label: string }[] = [
   { value: "device", label: "Implant / device" },
   { value: "other", label: "Other" },
 ];
+
+/* ------------------------- medicine catalog and stock ------------------------- */
+
+export type MedicineForm = "tablet" | "capsule" | "syrup" | "injection" | "cream" | "drops" | "other";
+export type StockKind = "receive" | "dispense" | "adjust" | "expired";
+
+export interface Medicine {
+  id: string;
+  name: string;
+  generic_name: string | null;
+  strength: string;
+  form: MedicineForm;
+  unit: string;
+  default_dose: string | null;
+  default_frequency: string | null;
+  default_duration: string | null;
+  unit_price: number;
+  reorder_level: number;
+  is_active: boolean;
+}
+
+/** Row of the `medicine_stock` view. */
+export interface MedicineStock extends Medicine {
+  stock: number;
+  next_expiry: string | null;
+}
+
+export interface StockMovement {
+  id: string;
+  medicine_id: string;
+  kind: StockKind;
+  quantity: number;
+  batch_no: string | null;
+  expiry_date: string | null;
+  note: string | null;
+  created_at: string;
+  profiles?: { full_name: string | null } | null;
+}
+
+/** One prescription row as held by the visit form. */
+export interface RxRow {
+  medicine: string;
+  dose: string;
+  frequency: string;
+  duration: string;
+  notes: string;
+}
+
+export interface RxTemplate {
+  id: string;
+  name: string;
+  created_by: string | null;
+  items: RxRow[];
+}
+
+/** Server-loaded data that powers the visit form typing shortcuts. */
+export interface PrescribingData {
+  catalog: { label: string; dose: string; frequency: string; duration: string }[];
+  recent: string[];
+  lastRx: RxRow[];
+  lastRxDate: string | null;
+  templates: RxTemplate[];
+  currentUserId: string;
+  isAdmin: boolean;
+}

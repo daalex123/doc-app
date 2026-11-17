@@ -9,6 +9,7 @@ import { requirePatientUser } from "@/lib/auth";
 import { BOOKING_ERRORS } from "@/lib/booking-errors";
 import { formatDateTime, isFuture } from "@/lib/dates";
 import { clinicWhatsappLink } from "@/lib/format";
+import { signAvatarUrls } from "@/lib/avatars";
 import { createClient } from "@/lib/supabase/server";
 import { getMyPatients, getSettings } from "@/lib/queries";
 import type { Appointment } from "@/lib/types";
@@ -29,12 +30,13 @@ export default async function PortalAppointmentsPage({
     getSettings(),
     supabase
       .from("appointments")
-      .select("*, patients(full_name, phone, food_allergies, drug_allergies), doctors(name, specialty)")
+      .select("*, patients(full_name, phone, food_allergies, drug_allergies, avatar_path), doctors(name, specialty)")
       .order("slot_start", { ascending: false })
       .returns<Appointment[]>(),
   ]);
 
   const all = data ?? [];
+  const avatarUrls = await signAvatarUrls(all.map((a) => a.patients?.avatar_path));
   const upcoming = all
     .filter((a) => a.status === "confirmed" && isFuture(a.slot_end))
     .sort((a, b) => a.slot_start.localeCompare(b.slot_start));
@@ -91,6 +93,7 @@ export default async function PortalAppointmentsPage({
           <div className="grid gap-3">
             {upcoming.map((a) => (
               <AppointmentCard
+                avatarUrls={avatarUrls}
                 key={a.id}
                 appointment={a}
                 returnTo="/portal/appointments"
@@ -113,6 +116,7 @@ export default async function PortalAppointmentsPage({
           <div className="grid gap-3">
             {past.map((a) => (
               <AppointmentCard
+                avatarUrls={avatarUrls}
                 key={a.id}
                 appointment={a}
                 returnTo="/portal/appointments"

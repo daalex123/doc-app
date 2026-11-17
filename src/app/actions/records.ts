@@ -72,6 +72,51 @@ export async function setHistoryStatus(formData: FormData) {
   revalidatePath(`/admin/patients/${parsed.data.patient_id}`);
 }
 
+/** Copies a prescription row into the patient's "Current medications" (history entry, category medication). */
+export async function addPrescriptionToMedications(formData: FormData) {
+  const user = await requireClinical();
+  const parsed = z
+    .object({ item_id: z.uuid(), patient_id: z.uuid() })
+    .safeParse({ item_id: formString(formData, "item_id"), patient_id: formString(formData, "patient_id") });
+  if (!parsed.success) return;
+
+  const supabase = await createClient();
+  const { data: item } = await supabase
+    .from("prescription_items")
+    .select("medicine, dose, frequency, duration, notes, visits!inner(patient_id, visit_date)")
+    .eq("id", parsed.data.item_id)
+    .maybeSingle();
+  const visit = item?.visits as unknown as { patient_id: string; visit_date: string } | null | undefined;
+  // The item must belong to this patient's visit.
+  if (!item || !visit || visit.patient_id !== parsed.data.patient_id) return;
+
+  const { data: existing } = await supabase
+    .from("history_entries")
+    .select("id")
+    .eq("patient_id", parsed.data.patient_id)
+    .eq("category", "medication")
+    .eq("status", "active")
+    .ilike("title", item.medicine.replace(/[%_\\]/g, "\\$&"))
+    .limit(1);
+  if (existing && existing.length > 0) return;
+
+  const detail = [item.dose, item.frequency, item.duration, item.notes].filter(Boolean).join(" · ");
+  const { error } = await supabase.from("history_entries").insert({
+    patient_id: parsed.data.patient_id,
+    category: "medication",
+    title: item.medicine.slice(0, 200),
+    detail: detail || null,
+    year: new Date(visit.visit_date).getFullYear(),
+    status: "active",
+    created_by: user.id,
+    reviewed_on: new Date().toISOString().slice(0, 10),
+  });
+  if (error) return;
+
+  await logAccess(user.id, "create", "history_entry", parsed.data.patient_id);
+  revalidatePath(`/admin/patients/${parsed.data.patient_id}`);
+}
+
 /* ---------------------------------- visits ---------------------------------- */
 
 export interface VisitActionContext {
@@ -87,6 +132,53 @@ const TEXT_KEYS = [
 ] as const;
 
 const clean = (v: string) => (v.trim() === "" ? null : v.trim());
+
+/** "Amoxicillin 500mg" -> { name: "Amoxicillin", strength: "500mg" }; otherwise the whole text is the name. */
+function splitMedicine(text: string): { name: string; strength: string } {
+  const m = text.match(
+    /^(.*?\S)\s+(\d+(?:\.\d+)?\s?(?:mg|mcg|g|ml|iu|%)(?:\s?\/\s?\d+(?:\.\d+)?\s?(?:mg|ml|g))?)$/i,
+  );
+  return m ? { name: m[1].trim(), strength: m[2].replace(/\s+/g, "") } : { name: text.trim(), strength: "" };
+}
+
+/**
+ * Medicines typed on a prescription that are not in the catalog yet are added to it
+ * (with that row's dose/frequency/duration as the defaults), so they autocomplete next time.
+ * Never blocks saving the visit.
+ */
+async function addNewMedicinesToCatalog(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  items: { medicine: string; dose: string | null; frequency: string | null; duration: string | null }[],
+) {
+  try {
+    const { data: existing } = await supabase
+      .from("medicines")
+      .select("name, strength")
+      .returns<{ name: string; strength: string }[]>();
+    const known = new Set<string>();
+    for (const m of existing ?? []) {
+      known.add(m.name.trim().toLowerCase());
+      known.add([m.name, m.strength].filter(Boolean).join(" ").trim().toLowerCase());
+    }
+    for (const it of items) {
+      const typed = it.medicine.trim().replace(/\s+/g, " ");
+      if (!typed || typed.length > 120 || known.has(typed.toLowerCase())) continue;
+      const { name, strength } = splitMedicine(typed);
+      if (known.has(name.toLowerCase()) && !strength) continue;
+      known.add(typed.toLowerCase());
+      await supabase.from("medicines").insert({
+        name,
+        strength,
+        form: "other",
+        default_dose: it.dose,
+        default_frequency: it.frequency,
+        default_duration: it.duration,
+      }); // a duplicate or RLS refusal is fine; the visit is already saved
+    }
+  } catch {
+    /* catalog is a convenience; ignore */
+  }
+}
 
 export async function saveVisit(
   ctx: VisitActionContext,
@@ -181,6 +273,7 @@ export async function saveVisit(
   if (items.length) {
     const { error } = await supabase.from("prescription_items").insert(items);
     if (error) return { errors: { _form: ["Visit saved, but prescriptions failed to save."] }, values };
+    await addNewMedicinesToCatalog(supabase, items);
   }
 
   // private note (never visible to the patient)

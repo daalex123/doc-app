@@ -5,6 +5,7 @@ import { BackLink } from "@/components/medical-history";
 import { VisitForm } from "@/components/visit-form";
 import { requireClinical } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { loadPrescribingData } from "@/lib/prescribing";
 import { saveVisit } from "@/app/actions/records";
 import { z } from "zod";
 
@@ -17,7 +18,7 @@ export default async function NewVisitPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ appointment?: string }>;
 }) {
-  await requireClinical();
+  const user = await requireClinical();
   const { id } = await params;
   const sp = await searchParams;
 
@@ -43,6 +44,8 @@ export default async function NewVisitPage({
     defaults = { complaint: appt.reason ?? "" };
   }
 
+  const prescribing = await loadPrescribingData(supabase, user, id);
+
   return (
     <>
       <BackLink href={`/admin/patients/${id}`}>Back to record</BackLink>
@@ -53,6 +56,7 @@ export default async function NewVisitPage({
           defaults={defaults}
           cancelHref={`/admin/patients/${id}`}
           isFinalized={false}
+          prescribing={prescribing}
         />
       </div>
     </>

@@ -9,7 +9,9 @@ import { AppointmentCard } from "@/components/appointment-list";
 import { LinkButton } from "@/components/link-button";
 import { isClinicalRole, requireStaff } from "@/lib/auth";
 import { BOOKING_ERRORS } from "@/lib/booking-errors";
-import { addDays, dayEndIso, dayStartIso, formatDate, isValidDateString, todayColombo } from "@/lib/dates";
+import { AppointmentsCalendar, calendarRange } from "@/components/appointments-calendar";
+import { addDays, colomboDate, dayEndIso, dayStartIso, formatDate, isValidDateString, todayColombo } from "@/lib/dates";
+import { signAvatarUrls } from "@/lib/avatars";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveDoctors } from "@/lib/queries";
 import type { Appointment } from "@/lib/types";
@@ -39,7 +41,7 @@ export default async function AdminAppointmentsPage({
 
   let query = supabase
     .from("appointments")
-    .select("*, patients(full_name, phone, food_allergies, drug_allergies), doctors(name, specialty)")
+    .select("*, patients(full_name, phone, food_allergies, drug_allergies, avatar_path), doctors(name, specialty)")
     .gte("slot_start", dayStartIso(date))
     .lt("slot_start", dayEndIso(date))
     .order("slot_start");
@@ -47,8 +49,26 @@ export default async function AdminAppointmentsPage({
   if (sp.status && ["confirmed", "completed", "cancelled", "no_show"].includes(sp.status)) {
     query = query.eq("status", sp.status);
   }
-  const { data } = await query.returns<Appointment[]>();
+  const range = calendarRange(date);
+  let monthQuery = supabase
+    .from("appointments")
+    .select("slot_start")
+    .neq("status", "cancelled")
+    .gte("slot_start", dayStartIso(range.start))
+    .lt("slot_start", dayEndIso(range.end))
+    .limit(5000);
+  if (sp.doctor) monthQuery = monthQuery.eq("doctor_id", sp.doctor);
+  const [{ data }, { data: monthRows }] = await Promise.all([
+    query.returns<Appointment[]>(),
+    monthQuery.returns<{ slot_start: string }[]>(),
+  ]);
+  const counts: Record<string, number> = {};
+  for (const r of monthRows ?? []) {
+    const k = colomboDate(r.slot_start);
+    counts[k] = (counts[k] ?? 0) + 1;
+  }
   const list = data ?? [];
+  const avatarUrls = await signAvatarUrls(list.map((a) => a.patients?.avatar_path));
 
   const qs = (d: string) => {
     const q = new URLSearchParams({ date: d });
@@ -124,6 +144,8 @@ export default async function AdminAppointmentsPage({
         </form>
       </div>
 
+      <AppointmentsCalendar date={date} today={today} counts={counts} hrefFor={qs} />
+
       {list.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
@@ -134,6 +156,7 @@ export default async function AdminAppointmentsPage({
         <div className="grid gap-3">
           {list.map((a) => (
             <AppointmentCard
+                avatarUrls={avatarUrls}
               key={a.id}
               appointment={a}
               returnTo={returnTo}

@@ -1,5 +1,6 @@
-import { CalendarClockIcon, StethoscopeIcon, UserIcon } from "lucide-react";
+import { CalendarClockIcon, StethoscopeIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PatientAvatar } from "@/components/patient-avatar";
 import { ConfirmButton } from "@/components/form-bits";
 import { formatInstantDate, formatTime, isFuture } from "@/lib/dates";
 import { cancelAppointment, setAppointmentStatus } from "@/app/actions/appointments";
@@ -28,6 +29,7 @@ export function AppointmentCard({
   canCancel,
   staffActions,
   showPatient,
+  avatarUrls,
   extra,
 }: {
   appointment: Appointment;
@@ -36,6 +38,8 @@ export function AppointmentCard({
   canCancel?: boolean;
   staffActions?: boolean;
   showPatient?: boolean;
+  /** avatar_path -> signed URL, signed once per page. */
+  avatarUrls?: Record<string, string>;
   extra?: React.ReactNode;
 }) {
   const upcoming = isFuture(a.slot_start);
@@ -52,8 +56,12 @@ export function AppointmentCard({
           <StatusBadge status={a.status} />
         </div>
         {showPatient && a.patients ? (
-          <p className="flex items-center gap-1.5 text-sm">
-            <UserIcon className="size-4 text-muted-foreground" />
+          <p className="flex items-center gap-2 text-sm">
+            <PatientAvatar
+              name={a.patients.full_name}
+              src={a.patients.avatar_path ? avatarUrls?.[a.patients.avatar_path] : null}
+              size="sm"
+            />
             {a.patients.full_name}
           </p>
         ) : null}

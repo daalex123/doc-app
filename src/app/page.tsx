@@ -1,16 +1,15 @@
+import { BrandLogo } from "@/components/brand-logo";
 import Link from "next/link";
 import {
   CalendarCheckIcon,
   FileHeartIcon,
   MessageCircleIcon,
   ShieldCheckIcon,
-  StethoscopeIcon,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { InstallButton, PwaRegister } from "@/components/pwa";
 import { LinkButton } from "@/components/link-button";
 import { getCurrentUser, homeFor } from "@/lib/auth";
-import { formatMoney } from "@/lib/dates";
 import { clinicWhatsappLink, displayPhone } from "@/lib/format";
 import { getActiveDoctors, getSettings } from "@/lib/queries";
 
@@ -45,11 +44,8 @@ export default async function Home() {
       <PwaRegister />
       <header className="border-b bg-background pt-[env(safe-area-inset-top)]">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <Link href="/" className="flex items-center gap-2 font-semibold">
-            <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <StethoscopeIcon className="size-4" />
-            </span>
-            {settings.name}
+          <Link href="/" aria-label={settings.name}>
+            <BrandLogo priority className="h-10" />
           </Link>
           <div className="flex items-center gap-2">
             <InstallButton />
@@ -117,7 +113,6 @@ export default async function Home() {
                     <p className="text-lg font-medium">{d.name}</p>
                     <p className="text-sm text-primary">{d.specialty}</p>
                     {d.bio ? <p className="mt-1 line-clamp-3 text-sm text-muted-foreground">{d.bio}</p> : null}
-                    <p className="mt-2 text-sm font-medium">Consultation {formatMoney(d.fee)}</p>
                   </CardContent>
                 </Card>
               ))}

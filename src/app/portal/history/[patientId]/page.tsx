@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/app-shell";
 import { MedicalHistory } from "@/components/medical-history";
 import { requirePatientUser } from "@/lib/auth";
 import { logAccess } from "@/lib/audit";
+import { signAvatarUrl } from "@/lib/avatars";
 import { loadMedicalHistory } from "@/lib/records";
 
 export const metadata: Metadata = { title: "Medical history" };
@@ -27,7 +28,7 @@ export default async function PortalHistoryPage({
   return (
     <>
       <PageHeader title="Medical history" description="Your visits, prescriptions and health background." />
-      <MedicalHistory patient={data.patient} entries={data.entries} visits={data.visits} tab={tab} />
+      <MedicalHistory avatarUrl={await signAvatarUrl(data.patient.avatar_path)} patient={data.patient} entries={data.entries} visits={data.visits} tab={tab} />
     </>
   );
 }

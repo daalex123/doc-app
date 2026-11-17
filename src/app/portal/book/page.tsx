@@ -6,6 +6,8 @@ import { BookingFlow, type Slot } from "@/components/booking-flow";
 import { requirePatientUser } from "@/lib/auth";
 import { BOOKING_ERRORS } from "@/lib/booking-errors";
 import { addDays, isValidDateString, todayColombo } from "@/lib/dates";
+import { PatientAvatar } from "@/components/patient-avatar";
+import { signAvatarUrls } from "@/lib/avatars";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveDoctors, getMyPatients, getSettings } from "@/lib/queries";
 import { bookAsPatient } from "@/app/actions/appointments";
@@ -45,9 +47,13 @@ export default async function PortalBookPage({
     slots = (data as Slot[] | null) ?? [];
   }
 
+  const avatarUrls = await signAvatarUrls(patients.map((p) => p.avatar_path));
+  const avatarOf = (p: (typeof patients)[number]) => (p.avatar_path ? avatarUrls[p.avatar_path] : null);
+
   const picker =
     patients.length === 1 ? (
-      <p className="text-sm">
+      <p className="flex items-center gap-2 text-sm">
+        <PatientAvatar name={patients[0].full_name} src={avatarOf(patients[0])} size="sm" />
         <span className="font-medium">{patients[0].full_name}</span>{" "}
         <Link href="/portal/patients/new" className="ml-2 text-primary hover:underline">
           Book for someone else
@@ -64,16 +70,17 @@ export default async function PortalBookPage({
               key={p.id}
               href={`/portal/book?${q}`}
               className={cn(
-                "rounded-lg border px-3 py-2 text-sm transition-colors hover:bg-accent/50",
+                "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors hover:bg-accent/50",
                 p.id === patient?.id && "border-primary bg-accent font-medium ring-1 ring-primary",
               )}
             >
+              <PatientAvatar name={p.full_name} src={avatarOf(p)} size="sm" />
               {p.full_name}
               {p.is_self ? <span className="ml-1 text-muted-foreground">(me)</span> : null}
             </Link>
           );
         })}
-        <Link href="/portal/patients/new" className="rounded-lg border border-dashed px-3 py-2 text-sm text-muted-foreground hover:bg-muted">
+        <Link href="/portal/patients/new" className="flex items-center rounded-lg border border-dashed px-3 py-2 text-sm text-muted-foreground hover:bg-muted">
           + Add family member
         </Link>
       </div>
@@ -87,7 +94,7 @@ export default async function PortalBookPage({
         state={{ patientId: patient?.id, doctorId: doctor?.id, date }}
         picker={picker}
         patientName={patient?.full_name}
-        doctors={doctors}
+        doctors={doctors.map((d) => ({ ...d, fee: 0 }))}
         slots={slots}
         action={bookAsPatient}
         error={sp.error ? (BOOKING_ERRORS[sp.error] ?? BOOKING_ERRORS.failed) : undefined}

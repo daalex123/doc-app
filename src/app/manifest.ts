@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Clinic",
-    short_name: "Clinic",
+    name: "Deyon Dispensary & Pharmacy",
+    short_name: "Deyon Dispensary & Pharmacy",
     description: "Book doctor appointments and manage your medical history.",
     id: "/portal",
     start_url: "/portal?source=pwa",

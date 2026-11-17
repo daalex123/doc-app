@@ -4,7 +4,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { SubmitButton } from "@/components/form-bits";
-import { addDays, formatDayChip, formatMoney, formatTime, todayColombo } from "@/lib/dates";
+import { addDays, formatDayChip, formatTime, todayColombo } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import type { Doctor } from "@/lib/types";
 
@@ -121,7 +121,6 @@ export function BookingFlow({
                 <span className="min-w-0">
                   <span className="block truncate font-semibold">{d.name}</span>
                   <span className="block truncate text-sm text-muted-foreground">{d.specialty}</span>
-                  <span className="mt-0.5 block text-sm font-semibold text-primary">{formatMoney(d.fee)}</span>
                 </span>
               </Link>
             ))}

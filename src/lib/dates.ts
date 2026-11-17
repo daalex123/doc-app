@@ -18,6 +18,11 @@ export function addDays(date: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** The Colombo calendar date (YYYY-MM-DD) of an ISO instant. */
+export function colomboDate(iso: string): string {
+  return new Date(Date.parse(iso) + 5.5 * 3_600_000).toISOString().slice(0, 10);
+}
+
 /** Start of a Colombo calendar day as an ISO instant. */
 export function dayStartIso(date: string): string {
   return new Date(`${date}T00:00:00+05:30`).toISOString();
@@ -86,6 +91,24 @@ export function ageFromDob(dob: string): number {
   let age = ty - by;
   if (tm < bm || (tm === bm && td < bd)) age -= 1;
   return age;
+}
+
+/** Human age that stays precise for children: "12 days", "5 months", "3 yrs 4 mos", "44 yrs". Colombo "today". */
+export function formatAge(dob: string): string {
+  const [by, bm, bd] = dob.split("-").map(Number);
+  const [ty, tm, td] = todayColombo().split("-").map(Number);
+  let months = (ty - by) * 12 + (tm - bm);
+  if (td < bd) months -= 1;
+  if (months < 0) return "0 days";
+  if (months < 1) {
+    const days = Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(by, bm - 1, bd)) / 86_400_000);
+    return `${days} ${days === 1 ? "day" : "days"}`;
+  }
+  if (months < 24) return `${months} ${months === 1 ? "month" : "months"}`;
+  const years = Math.floor(months / 12);
+  const rem = months % 12;
+  if (years < 18 && rem > 0) return `${years} yrs ${rem} ${rem === 1 ? "mo" : "mos"}`;
+  return `${years} yrs`;
 }
 
 export function formatMoney(amount: number): string {

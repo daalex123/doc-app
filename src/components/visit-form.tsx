@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Field, SubmitButton } from "@/components/form-bits";
 import { LinkButton } from "@/components/link-button";
 import type { RecordFormState } from "@/app/actions/records";
-import { RX_ROWS } from "@/lib/types";
+import { PrescriptionEditor } from "@/components/prescription-editor";
+import { RX_ROWS, type PrescribingData } from "@/lib/types";
 
 type Action = (prev: RecordFormState, formData: FormData) => Promise<RecordFormState>;
 
@@ -26,11 +27,13 @@ export function VisitForm({
   defaults,
   cancelHref,
   isFinalized,
+  prescribing,
 }: {
   action: Action;
   defaults: Record<string, string>;
   cancelHref: string;
   isFinalized: boolean;
+  prescribing: PrescribingData;
 }) {
   const [state, formAction] = useActionState(action, {});
   const v = (k: string) => state.values?.[k] ?? defaults[k] ?? "";
@@ -106,27 +109,18 @@ export function VisitForm({
           <CardTitle>Prescription</CardTitle>
           <CardDescription>Leave unused rows empty.</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-3">
-          {Array.from({ length: RX_ROWS }, (_, i) => (
-            <div key={i} className="grid grid-cols-2 gap-2 sm:grid-cols-12">
-              <div className="col-span-2 sm:col-span-4">
-                <Input
-                  name={`rx_medicine_${i}`}
-                  defaultValue={v(`rx_medicine_${i}`)}
-                  placeholder={i === 0 ? "Medicine" : ""}
-                  aria-label={`Medicine ${i + 1}`}
-                  aria-invalid={!!err(`rx_medicine_${i}`)}
-                />
-                {err(`rx_medicine_${i}`) ? (
-                  <p role="alert" className="mt-1 text-xs text-destructive">{err(`rx_medicine_${i}`)?.[0]}</p>
-                ) : null}
-              </div>
-              <Input className="sm:col-span-2" name={`rx_dose_${i}`} defaultValue={v(`rx_dose_${i}`)} placeholder={i === 0 ? "Dose" : ""} aria-label={`Dose ${i + 1}`} />
-              <Input className="sm:col-span-2" name={`rx_frequency_${i}`} defaultValue={v(`rx_frequency_${i}`)} placeholder={i === 0 ? "Frequency" : ""} aria-label={`Frequency ${i + 1}`} />
-              <Input className="sm:col-span-2" name={`rx_duration_${i}`} defaultValue={v(`rx_duration_${i}`)} placeholder={i === 0 ? "Duration" : ""} aria-label={`Duration ${i + 1}`} />
-              <Input className="col-span-2 sm:col-span-2" name={`rx_notes_${i}`} defaultValue={v(`rx_notes_${i}`)} placeholder={i === 0 ? "Notes" : ""} aria-label={`Notes ${i + 1}`} />
-            </div>
-          ))}
+        <CardContent>
+          <PrescriptionEditor
+            initial={Array.from({ length: RX_ROWS }, (_, i) => ({
+              medicine: v(`rx_medicine_${i}`),
+              dose: v(`rx_dose_${i}`),
+              frequency: v(`rx_frequency_${i}`),
+              duration: v(`rx_duration_${i}`),
+              notes: v(`rx_notes_${i}`),
+            }))}
+            errors={state.errors}
+            data={prescribing}
+          />
         </CardContent>
       </Card>
 

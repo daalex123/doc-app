@@ -15,12 +15,12 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Clinic Appointments",
-    template: "%s | Clinic Appointments",
+    default: "Deyon Dispensary & Pharmacy",
+    template: "%s | Deyon Pharmacy",
   },
   description: "Book doctor appointments and manage your medical history online.",
-  applicationName: "Clinic",
-  appleWebApp: { capable: true, title: "Clinic", statusBarStyle: "default" },
+  applicationName: "Deyon Pharmacy",
+  appleWebApp: { capable: true, title: "Deyon", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {

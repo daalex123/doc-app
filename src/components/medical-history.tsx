@@ -7,13 +7,14 @@ import {
   PillIcon,
   PlusIcon,
 } from "lucide-react";
+import { PatientAvatar } from "@/components/patient-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HistoryEntryForm } from "@/components/history-entry-form";
 import { LinkButton } from "@/components/link-button";
-import { ageFromDob, formatDate, formatInstantDate } from "@/lib/dates";
+import { formatAge, formatDate, formatInstantDate } from "@/lib/dates";
 import { displayPhone } from "@/lib/format";
 import { setHistoryStatus } from "@/app/actions/records";
 import { HISTORY_CATEGORIES, type HistoryEntry, type Patient, type Visit, type Vitals } from "@/lib/types";
@@ -27,7 +28,7 @@ const VITAL_LABELS: [keyof Vitals, string, string][] = [
   ["sugar", "Sugar", "mg/dL"],
 ];
 
-function Summary({ patient, entries }: { patient: Patient; entries: HistoryEntry[] }) {
+function Summary({ patient, entries, avatarUrl }: { patient: Patient; entries: HistoryEntry[]; avatarUrl?: string | null }) {
   const active = (c: string) => entries.filter((e) => e.category === c && e.status === "active");
   const allergyEntries = active("allergy");
   const conditions = active("condition");
@@ -40,12 +41,15 @@ function Summary({ patient, entries }: { patient: Patient; entries: HistoryEntry
     <Card>
       <CardHeader className="border-b">
         <div className="flex flex-wrap items-start justify-between gap-2">
-          <div>
-            <CardTitle className="text-xl">{patient.full_name}</CardTitle>
-            <CardDescription>
-              {ageFromDob(patient.dob)} yrs · <span className="capitalize">{patient.gender}</span> · Born{" "}
-              {formatDate(patient.dob)} · {displayPhone(patient.phone)}
-            </CardDescription>
+          <div className="flex items-center gap-3">
+            <PatientAvatar name={patient.full_name} src={avatarUrl} size="lg" />
+            <div>
+              <CardTitle className="text-xl">{patient.full_name}</CardTitle>
+              <CardDescription>
+                {formatAge(patient.dob)} · <span className="capitalize">{patient.gender}</span> · Born{" "}
+                {formatDate(patient.dob)} · {displayPhone(patient.phone)}
+              </CardDescription>
+            </div>
           </div>
           {patient.blood_group ? (
             <Badge variant="outline" className="gap-1">
@@ -198,7 +202,9 @@ export function MedicalHistory({
   canWriteClinical,
   newVisitHref,
   visitEditHref,
+  avatarUrl,
 }: {
+  avatarUrl?: string | null;
   patient: Patient;
   entries: HistoryEntry[];
   visits: Visit[];
@@ -208,9 +214,10 @@ export function MedicalHistory({
   newVisitHref?: string;
   visitEditHref?: (visitId: string) => string;
 }) {
-  const prescriptions = visits
+  const rxVisits = visits
     .filter((v) => v.status === "finalized" || canWriteClinical)
-    .flatMap((v) => (v.prescription_items ?? []).map((i) => ({ ...i, date: v.visit_date })));
+    .filter((v) => (v.prescription_items ?? []).length > 0);
+  const prescriptionCount = rxVisits.reduce((n, v) => n + (v.prescription_items ?? []).length, 0);
 
   const byCategory = HISTORY_CATEGORIES.map((c) => ({
     ...c,
@@ -221,12 +228,12 @@ export function MedicalHistory({
 
   return (
     <div className="grid gap-6">
-      <Summary patient={patient} entries={entries} />
+      <Summary patient={patient} entries={entries} avatarUrl={avatarUrl} />
 
       <Tabs defaultValue={tabValue}>
         <TabsList>
           <TabsTrigger value="visits">Visits ({visits.length})</TabsTrigger>
-          <TabsTrigger value="prescriptions">Prescriptions ({prescriptions.length})</TabsTrigger>
+          <TabsTrigger value="prescriptions">Prescriptions ({prescriptionCount})</TabsTrigger>
           <TabsTrigger value="background">Background history</TabsTrigger>
         </TabsList>
 
@@ -259,22 +266,33 @@ export function MedicalHistory({
         <TabsContent value="prescriptions" className="mt-4">
           <Card>
             <CardContent className="pt-1">
-              {prescriptions.length === 0 ? (
+              {rxVisits.length === 0 ? (
                 <p className="py-6 text-center text-sm text-muted-foreground">No prescriptions yet.</p>
               ) : (
-                <ul className="divide-y">
-                  {prescriptions.map((p) => (
-                    <li key={p.id} className="flex flex-wrap items-baseline justify-between gap-2 py-2.5 text-sm">
-                      <span>
-                        <span className="font-medium">{p.medicine}</span>{" "}
-                        <span className="text-muted-foreground">
-                          {[p.dose, p.frequency, p.duration].filter(Boolean).join(" · ")}
+                <div className="grid gap-5 pt-3">
+                  {rxVisits.map((v) => (
+                    <section key={v.id}>
+                      <h3 className="mb-1 text-sm font-semibold">
+                        {formatInstantDate(v.visit_date)}
+                        <span className="font-normal text-muted-foreground">
+                          {v.doctors?.name ? ` · ${v.doctors.name}` : ""}
+                          {v.diagnosis ? ` · ${v.diagnosis}` : ""}
                         </span>
-                      </span>
-                      <span className="text-xs text-muted-foreground">{formatInstantDate(p.date)}</span>
-                    </li>
+                      </h3>
+                      <ul className="divide-y rounded-lg border px-3">
+                        {(v.prescription_items ?? []).map((p) => (
+                          <li key={p.id} className="py-2.5 text-sm">
+                            <span className="font-medium">{p.medicine}</span>{" "}
+                            <span className="text-muted-foreground">
+                              {[p.dose, p.frequency, p.duration].filter(Boolean).join(" · ")}
+                            </span>
+                            {p.notes ? <p className="text-xs text-muted-foreground">{p.notes}</p> : null}
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
                   ))}
-                </ul>
+                </div>
               )}
             </CardContent>
           </Card>
