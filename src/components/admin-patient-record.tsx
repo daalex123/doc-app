@@ -475,7 +475,7 @@ export function AdminPatientRecord({
                         ) : null}
                       </div>
                       <Link
-                        href={`/admin/patients/${patient.id}/visits/${v.id}/edit`}
+                        href={`/admin/patients/${patient.id}/visits/${v.id}`}
                         className="text-xs font-medium text-primary hover:underline"
                       >
                         View visit

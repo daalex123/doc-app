@@ -12,6 +12,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   ];
   nav.push({ href: "/admin/inventory", label: "Inventory", icon: "inventory" });
   if (isClinicalRole(user.profile.role)) {
+    nav.splice(1, 0, { href: "/admin/visits", label: "Visits", icon: "visits" });
     nav.push({ href: "/admin/templates", label: "Rx templates", icon: "templates" });
   }
   if (user.profile.role === "admin") {

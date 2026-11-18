@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CalendarCheckIcon, CalendarPlusIcon, CheckCheckIcon, UsersIcon, XCircleIcon } from "lucide-react";
+import { CalendarCheckIcon, CalendarPlusIcon, CheckCheckIcon, FootprintsIcon, UsersIcon, XCircleIcon } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/app-shell";
 import { AppointmentCard } from "@/components/appointment-list";
@@ -98,9 +98,16 @@ export default async function AdminDashboard() {
         title="Dashboard"
         description={`Today, ${formatDate(today)}`}
         actions={
-          <LinkButton href="/admin/appointments/new">
-            <CalendarPlusIcon /> New booking
-          </LinkButton>
+          <div className="flex flex-wrap gap-2">
+            {clinical ? (
+              <LinkButton href="/admin/patients?walkin=1" size="lg">
+                <FootprintsIcon /> Walk-in visit
+              </LinkButton>
+            ) : null}
+            <LinkButton href="/admin/appointments/new" variant={clinical ? "outline" : "default"} size={clinical ? "lg" : undefined}>
+              <CalendarPlusIcon /> New booking
+            </LinkButton>
+          </div>
         }
       />
 
@@ -151,9 +158,12 @@ export default async function AdminDashboard() {
 
           {clinical ? (
             <>
-              <h2 className="mb-3 mt-8 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                Visits today ({visits.length})
-              </h2>
+              <div className="mb-3 mt-8 flex items-center justify-between">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                  Visits today ({visits.length})
+                </h2>
+                <Link href="/admin/visits" className="text-sm text-primary hover:underline">All visits</Link>
+              </div>
               {visits.length === 0 ? (
                 <Card>
                   <CardContent className="py-8 text-center text-sm text-muted-foreground">
@@ -166,7 +176,7 @@ export default async function AdminDashboard() {
                     {visits.map((v) => (
                       <Link
                         key={v.id}
-                        href={`/admin/patients/${v.patient_id}/visits/${v.id}/edit`}
+                        href={`/admin/patients/${v.patient_id}/visits/${v.id}`}
                         className="flex items-center justify-between gap-3 py-2.5 text-sm first:pt-0 last:pb-0 hover:bg-muted/40"
                       >
                         <span className="min-w-0">

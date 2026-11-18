@@ -22,6 +22,8 @@ export interface PatientActionContext {
   id?: string;
   isSelf?: boolean;
   next?: string;
+  /** After registering, go straight to a new (walk-in) visit for this patient. */
+  walkIn?: boolean;
 }
 
 const TEXT_FIELDS = [
@@ -96,6 +98,10 @@ export async function savePatient(
 
   revalidatePath(`/${ctx.scope}`, "layout");
   const fallback =
-    ctx.scope === "admin" ? `/admin/patients/${patientId}` : "/portal/patients";
+    ctx.scope === "admin"
+      ? ctx.walkIn && !ctx.id
+        ? `/admin/patients/${patientId}/visits/new`
+        : `/admin/patients/${patientId}`
+      : "/portal/patients";
   redirect(safeNext(ctx.next, ctx.scope) ?? fallback);
 }

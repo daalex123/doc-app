@@ -24,12 +24,13 @@ type Row = Pick<Patient, "id" | "full_name" | "gender" | "dob" | "phone" | "food
 export default async function AdminPatientsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; walkin?: string }>;
 }) {
   const user = await requireStaff();
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page) || 1);
   const q = sp.q?.trim();
+  const walkIn = sp.walkin === "1";
 
   const supabase = await createClient();
   let query = supabase
@@ -54,6 +55,7 @@ export default async function AdminPatientsPage({
   const pageHref = (p: number) => {
     const params = new URLSearchParams();
     if (q) params.set("q", q);
+    if (walkIn) params.set("walkin", "1");
     params.set("page", String(p));
     return `/admin/patients?${params}`;
   };
@@ -61,8 +63,8 @@ export default async function AdminPatientsPage({
   return (
     <>
       <PageHeader
-        title="Patients"
-        description={`${count ?? 0} ${q ? "matching" : "registered"}`}
+        title={walkIn ? "Walk-in visit" : "Patients"}
+        description={walkIn ? "Find the patient to start their visit, or register a new one." : `${count ?? 0} ${q ? "matching" : "registered"}`}
         actions={
           <div className="flex flex-wrap gap-2">
             {canImportPatients(user.profile.role) ? (
@@ -70,15 +72,16 @@ export default async function AdminPatientsPage({
                 <UploadIcon /> Import
               </LinkButton>
             ) : null}
-            <LinkButton href="/admin/patients/new">
-              <UserPlusIcon /> Add patient
+            <LinkButton href={walkIn ? "/admin/patients/new?walkin=1" : "/admin/patients/new"}>
+              <UserPlusIcon /> {walkIn ? "New patient" : "Add patient"}
             </LinkButton>
           </div>
         }
       />
 
       <form method="get" className="mb-4 flex max-w-md gap-2">
-        <Input name="q" defaultValue={q} placeholder="Search by name or phone" aria-label="Search patients" />
+        {walkIn ? <input type="hidden" name="walkin" value="1" /> : null}
+        <Input name="q" defaultValue={q} autoFocus={walkIn} placeholder="Search by name or phone" aria-label="Search patients" />
         <SubmitButton pendingText="Searching...">
           <SearchIcon /> Search
         </SubmitButton>
@@ -104,7 +107,7 @@ export default async function AdminPatientsPage({
                   return (
                     <TableRow key={p.id} className="hover:bg-accent/40">
                       <TableCell>
-                        <Link href={`/admin/patients/${p.id}`} className="flex items-center gap-3 font-medium text-primary hover:underline">
+                        <Link href={walkIn ? `/admin/patients/${p.id}/visits/new` : `/admin/patients/${p.id}`} className="flex items-center gap-3 font-medium text-primary hover:underline">
                           <PatientAvatar name={p.full_name} src={p.avatar_path ? avatarUrls[p.avatar_path] : null} size="sm" />
                           {p.full_name}
                         </Link>

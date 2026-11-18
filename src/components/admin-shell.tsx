@@ -8,6 +8,7 @@ import {
   CalendarDaysIcon,
   LayoutDashboardIcon,
   ClipboardListIcon,
+  FileTextIcon,
   LogOutIcon,
   PackageIcon,
   MenuIcon,
@@ -19,7 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type AdminIconKey = "dashboard" | "appointments" | "patients" | "doctors" | "staff" | "inventory" | "templates";
+export type AdminIconKey = "dashboard" | "appointments" | "patients" | "doctors" | "staff" | "inventory" | "templates" | "visits";
 
 export interface AdminNavItem {
   href: string;
@@ -36,6 +37,7 @@ const ICONS: Record<AdminIconKey, LucideIcon> = {
   staff: UserCogIcon,
   inventory: PackageIcon,
   templates: ClipboardListIcon,
+  visits: FileTextIcon,
 };
 
 
