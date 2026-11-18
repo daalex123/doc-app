@@ -1,4 +1,5 @@
 import { BrandLogo } from "@/components/brand-logo";
+import { SiteQr } from "@/components/site-qr";
 import Link from "next/link";
 import {
   ArrowRightIcon,
@@ -135,6 +136,15 @@ export default async function Home() {
                   </li>
                 ))}
               </ul>
+              <div className="mt-8 flex max-w-md items-center gap-4 rounded-2xl border bg-background p-3 shadow-xs">
+                <SiteQr size={112} />
+                <div>
+                  <p className="font-semibold">Open on your phone</p>
+                  <p className="text-sm text-muted-foreground">
+                    Scan this code with your camera to open the app, then add it to your home screen.
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Product preview */}
