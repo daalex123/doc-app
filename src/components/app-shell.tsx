@@ -58,7 +58,7 @@ export function AppShell({
       <header className="sticky top-0 z-30 hidden border-b bg-background/90 backdrop-blur md:block">
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-2.5">
           <Link href={homeHref} aria-label="Deyon Dispensary & Pharmacy" className="shrink-0">
-            <BrandLogo className="h-9" />
+            <BrandLogo className="h-12" />
           </Link>
           <div className="min-w-0 flex-1">
             <NavLinks items={nav} />
@@ -103,7 +103,7 @@ export function PageHeader({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
         {description ? (

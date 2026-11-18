@@ -4,6 +4,7 @@ import { FootprintsIcon, SearchIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ClickableRow } from "@/components/clickable-row";
 import { SubmitButton } from "@/components/form-bits";
 import { PageHeader } from "@/components/app-shell";
 import { LinkButton } from "@/components/link-button";
@@ -113,7 +114,7 @@ export default async function AdminVisitsPage({
               </TableHeader>
               <TableBody>
                 {rows.map((v) => (
-                  <TableRow key={v.id} className="hover:bg-accent/40">
+                  <ClickableRow key={v.id} href={`/admin/patients/${v.patient_id}/visits/${v.id}`} className="hover:bg-accent/40">
                     <TableCell className="whitespace-nowrap">{formatDateTime(v.visit_date)}</TableCell>
                     <TableCell>
                       <Link
@@ -130,7 +131,7 @@ export default async function AdminVisitsPage({
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">{v.appointment_id ? "Booked" : "Walk-in"}</TableCell>
                     <TableCell className="capitalize">{v.status}</TableCell>
-                  </TableRow>
+                  </ClickableRow>
                 ))}
               </TableBody>
             </Table>

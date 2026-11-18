@@ -55,9 +55,9 @@ function SidebarContent({
         href="/admin"
         onClick={onNavigate}
         aria-label="Deyon Dispensary & Pharmacy"
-        className="flex h-16 shrink-0 items-center px-5"
+        className="flex h-24 shrink-0 items-center px-5"
       >
-        <BrandLogo className="h-10" />
+        <BrandLogo className="h-14" />
       </Link>
       <nav className="grid gap-1 px-3 py-2" aria-label="Main">
         {nav.map((item) => {
@@ -179,8 +179,8 @@ export function AdminShell({
             </form>
           </div>
         </header>
-        <main className="flex-1 p-3 md:p-5">
-          <div className="mx-auto w-full max-w-6xl rounded-2xl border bg-card p-4 shadow-xs md:p-6">
+        <main className="flex-1 p-2 md:p-3">
+          <div className="mx-auto w-full max-w-7xl rounded-2xl border bg-card p-3 shadow-xs md:p-4">
             {children}
           </div>
         </main>

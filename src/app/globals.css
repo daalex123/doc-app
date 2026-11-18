@@ -134,7 +134,19 @@
   }
   html {
     @apply font-sans;
+    /* Readability: text is rem-based, so it scales with this. Default was 16px. */
+    font-size: 125%;
   }
+}
+/* Spacing, paddings, gaps and control heights keep close to their old pixel size
+   (0.25rem at 16px = 4px) so bigger text doesn't also mean bigger gaps. */
+:root {
+  --spacing: 0.22rem;
+}
+/* The smallest text was too small to read comfortably (12px at the old base). */
+.text-xs {
+  font-size: 0.75rem;
+  line-height: 1.2rem;
 }
 /* Client (patient) area: palette from the Doctor Appointment Mobile App UI Kit (primary #5a88c6).
    Scoped so the admin palette on :root is untouched. Applied by the portal, auth and landing layouts. */

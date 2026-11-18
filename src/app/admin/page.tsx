@@ -111,7 +111,7 @@ export default async function AdminDashboard() {
         }
       />
 
-      <div className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {stats.map((s) => (
           <Card key={s.label} size="sm">
             <CardContent className="flex items-center justify-between gap-2">
@@ -127,7 +127,7 @@ export default async function AdminDashboard() {
         ))}
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-3">
+      <div className="grid gap-5 lg:grid-cols-3">
         <section className="lg:col-span-2">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Today&apos;s queue</h2>
